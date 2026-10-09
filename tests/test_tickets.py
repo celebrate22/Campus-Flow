@@ -1,56 +1,34 @@
+# tests/test_tickets.py
 import unittest
-from campusflow.tickets import Ticket, validate_ticket
+from campusflow.tickets import calculate_priority, validate_status
 
-class TestTicketValidation(unittest.TestCase):
+class TestTicketLogic(unittest.TestCase):
+    def test_priority_rules(self):
+        # RULE 1: high urgency AND 10 or more affected users -> critical
+        self.assertEqual(calculate_priority("high", 15), "critical")
+        self.assertEqual(calculate_priority("high", 10), "critical")
 
-    def test_valid_ticket_passes(self):
-        """Valid tickets should return True smoothly."""
-        ticket = Ticket(
-            id="TCK-101",
-            title="Wi-Fi Router failure in Dorm B",
-            category="IT",
-            urgency="High",
-            affected_users=25,
-            priority="High",
-            status="Open",
-            assigned_to="Helpdesk"
-        )
-        self.assertTrue(validate_ticket(ticket))
+        # RULE 2: high urgency OR 10 or more affected users -> high
+        self.assertEqual(calculate_priority("high", 5), "high")
+        self.assertEqual(calculate_priority("low", 12), "high")
 
-    def test_empty_title_fails(self):
-        """Tickets with a blank title should raise a ValueError."""
-        ticket = Ticket("TCK-102", "", "IT", "Low", 5, "Low", "Open", "Staff")
-        with self.assertRaises(ValueError) as context:
-            validate_ticket(ticket)
-        self.assertEqual(str(context.exception), "Validation Failed: Title cannot be empty.")
+        # RULE 3: medium urgency OR 3 or more affected users -> medium
+        self.assertEqual(calculate_priority("medium", 2), "medium")
+        self.assertEqual(calculate_priority("low", 4), "medium")
 
-    def test_whitespace_title_fails(self):
-        """Tickets with only spaces in the title should raise a ValueError."""
-        ticket = Ticket("TCK-103", "   ", "IT", "Low", 5, "Low", "Open", "Staff")
-        with self.assertRaises(ValueError) as context:
-            validate_ticket(ticket)
-        self.assertEqual(str(context.exception), "Validation Failed: Title cannot be just blank spaces.")
+        # RULE 4: remaining valid tickets -> low
+        self.assertEqual(calculate_priority("low", 1), "low")
 
-    def test_empty_status_fails(self):
-        """Tickets missing a status should raise a ValueError."""
-        ticket = Ticket("TCK-104", "Fix leak", "Facilities", "Medium", 2, "Medium", "", "Janitor")
-        with self.assertRaises(ValueError) as context:
-            validate_ticket(ticket)
-        self.assertEqual(str(context.exception), "Validation Failed: Status cannot be empty.")
+    def test_status_lookup_bounds(self):
+        try:
+            validate_status("open")
+            validate_status("in_progress")
+            validate_status("resolved")
+        except ValueError:
+            self.fail("validate_status raised ValueError unexpectedly on a valid state!")
 
-    def test_affected_users_zero_fails(self):
-        """Tickets impacting exactly 0 users must be rejected."""
-        ticket = Ticket("TCK-105", "Printer jam", "IT", "Low", 0, "Low", "Open", "Helpdesk")
-        with self.assertRaises(ValueError) as context:
-            validate_ticket(ticket)
-        self.assertEqual(str(context.exception), "Validation Failed: affected_users cannot be 0.")
-
-    def test_affected_users_negative_fails(self):
-        """Tickets impacting negative users must be rejected."""
-        ticket = Ticket("TCK-106", "Broken window", "Facilities", "High", -3, "High", "Open", "Admin")
-        with self.assertRaises(ValueError) as context:
-            validate_ticket(ticket)
-        self.assertEqual(str(context.exception), "Validation Failed: affected_users cannot be negative.")
+        with self.assertRaises(ValueError):
+            validate_status("pending")
 
 if __name__ == "__main__":
     unittest.main()
