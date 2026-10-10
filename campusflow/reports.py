@@ -1,50 +1,45 @@
-# reports.py
+# campusflow/reports.py
+"""F6 - totals and breakdowns by status and priority."""
 
-def generate_system_summary_report(all_tickets_list):
-    """
-    F6 — REPORTS: Calculates totals and metric breakdowns by status and priority.
-    Safely handles empty datasets without dividing or crashing.
-    """
-    total_tickets = len(all_tickets_list)
-    
-    # Initialize baseline tracking dictionaries with required system states
-    status_counts = {"open": 0, "in_progress": 0, "resolved": 0}
-    priority_counts = {"critical": 0, "high": 0, "medium": 0, "low": 0}
+STATUS_ORDER = ("open", "in_progress", "resolved")
+PRIORITY_ORDER = ("critical", "high", "medium", "low")
 
-    # Aggregate counts from our active database entries
+
+def build_summary(all_tickets_list):
+    """Pure calculation: count tickets. Safe for an empty list."""
+    status_counts = {name: 0 for name in STATUS_ORDER}
+    priority_counts = {name: 0 for name in PRIORITY_ORDER}
+
     for ticket in all_tickets_list:
-        status = ticket.get("status", "open").lower()
-        priority = ticket.get("priority", "low").lower()
-
-        if status in status_counts:
-            status_counts[status] += 1
-        else:
-            status_counts[status] = status_counts.get(status, 0) + 1
-
-        if priority in priority_counts:
-            priority_counts[priority] += 1
-        else:
-            priority_counts[priority] = priority_counts.get(priority, 0) + 1
-
-    # Format and present the metrics cleanly onto the text console interface
-    print("\n" + "="*35)
-    print("        SYSTEM METRICS REPORT       ")
-    print("="*35)
-    print(f"Total Tickets Logged: {total_tickets}")
-    print("-"*35)
-    
-    print("Breakdown by Status:")
-    for status, count in status_counts.items():
-        print(f"  • {status.replace('_', ' ').title()}: {count}")
-        
-    print("-"*35)
-    print("Breakdown by Priority:")
-    for priority, count in priority_counts.items():
-        print(f"  • {priority.title()}: {count}")
-    print("="*35 + "\n")
+        status = str(ticket.get("status") or "open").lower()
+        priority = str(ticket.get("priority") or "low").lower()
+        status_counts[status] = status_counts.get(status, 0) + 1
+        priority_counts[priority] = priority_counts.get(priority, 0) + 1
 
     return {
-        "total": total_tickets,
+        "total": len(all_tickets_list),
         "status": status_counts,
-        "priority": priority_counts
+        "priority": priority_counts,
     }
+
+
+def generate_system_summary_report(all_tickets_list, display=True):
+    """Build the summary, optionally print it, and return the numbers."""
+    summary = build_summary(all_tickets_list)
+
+    if display:
+        print("\n" + "=" * 35)
+        print("        SYSTEM METRICS REPORT")
+        print("=" * 35)
+        print(f"Total Tickets Logged: {summary['total']}")
+        print("-" * 35)
+        print("Breakdown by Status:")
+        for status, count in summary["status"].items():
+            print(f"  - {status.replace('_', ' ').title()}: {count}")
+        print("-" * 35)
+        print("Breakdown by Priority:")
+        for priority, count in summary["priority"].items():
+            print(f"  - {priority.title()}: {count}")
+        print("=" * 35 + "\n")
+
+    return summary

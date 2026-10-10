@@ -7,5 +7,5 @@ __all__ = [
     "Ticket",
     "TicketStorage",
     "WorkflowEngine",
-    "generate_system_summary_report"
+    "generate_system_summary_report",
 ]

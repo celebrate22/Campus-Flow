@@ -1,5 +1,14 @@
+# Virtual environment
 .venv/
+
+# Python cache
 __pycache__/
 *.pyc
+
+# Secrets
 .env
+
+# Runtime data (live tickets) and test leftovers
 data/tickets.json
+tickets.json
+*.tmp
